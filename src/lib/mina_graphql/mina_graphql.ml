@@ -1185,6 +1185,15 @@ module Types = struct
                  ~args:Arg.[]
                  ~resolve:(fun _ { account; _ } ->
                    account.Account.Poly.snapp_uri)
+             ; field "snappState"
+                 ~typ:(list @@ non_null string)
+                 ~doc:"The snapp state associated with this account"
+                 ~args:Arg.[]
+                 ~resolve:(fun _ { account; _ } ->
+                   account.Account.Poly.snapp
+                   |> Option.map ~f:(fun snapp_account ->
+                          snapp_account.app_state |> Snapp_state.V.to_list
+                          |> List.map ~f:Snapp_basic.F.to_string))
              ; field "tokenSymbol" ~typ:string
                  ~doc:"The token symbol associated with this account"
                  ~args:Arg.[]
