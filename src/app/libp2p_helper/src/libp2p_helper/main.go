@@ -158,6 +158,8 @@ func main() {
 		}
 	}()
 
+	go app.bitswapCtx.Loop()
+
 	for {
 		rawMsg, err := decoder.Decode()
 		if err != nil {
