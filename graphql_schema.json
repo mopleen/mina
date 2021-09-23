@@ -13083,7 +13083,7 @@
           "description": null,
           "fields": [
             {
-              "name": "initialMininumBalance",
+              "name": "initialMinimumBalance",
               "description": "The initial minimum balance for a time-locked account",
               "args": [],
               "type": {
