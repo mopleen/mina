@@ -24,7 +24,7 @@ module Command_error : sig
     | Bad_token
     | Expired of
         [ `Valid_until of Mina_numbers.Global_slot.t ]
-        * [ `Current_global_slot of Mina_numbers.Global_slot.t ]
+        * [ `Global_slot_since_genesis of Mina_numbers.Global_slot.t ]
     | Unwanted_fee_token of Token_id.t
     | Invalid_transaction
   [@@deriving sexp, to_yojson]
@@ -77,11 +77,11 @@ val empty :
 (** How many transactions are currently in the pool *)
 val size : t -> int
 
-(** What is the lowest fee transaction in the pool *)
-val min_fee : t -> Currency.Fee.t option
+(* The least fee per weight unit of all transactions in the transaction pool *)
+val min_fee : t -> Currency.Fee_rate.t option
 
-(** Remove the lowest fee command from the pool, along with any others from the
-    same account with higher nonces. *)
+(** Remove the command from the pool with the lowest fee per wu,
+    along with any others from the same account with higher nonces. *)
 val remove_lowest_fee :
   t -> Transaction_hash.User_command_with_valid_signature.t Sequence.t * t
 
@@ -89,7 +89,7 @@ val remove_lowest_fee :
 val remove_expired :
   t -> Transaction_hash.User_command_with_valid_signature.t Sequence.t * t
 
-(** Get the highest fee applicable command in the pool *)
+(** Get the applicable command in the pool with the highest fee per wu *)
 val get_highest_fee :
   t -> Transaction_hash.User_command_with_valid_signature.t option
 
@@ -190,8 +190,8 @@ val revalidate :
      (** Lookup an account in the new ledger *)
   -> t * Transaction_hash.User_command_with_valid_signature.t Sequence.t
 
-(** Get the current global slot according to the pool's time controller. *)
-val current_global_slot : t -> Mina_numbers.Global_slot.t
+(** Get the global slot since genesis according to the pool's time controller. *)
+val global_slot_since_genesis : t -> Mina_numbers.Global_slot.t
 
 module For_tests : sig
   (** Checks the invariants of the data structure. If this throws an exception

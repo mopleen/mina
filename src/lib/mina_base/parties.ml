@@ -429,7 +429,7 @@ let of_verifiable (t : Verifiable.t) : t =
 
 let valid_interval (t : t) =
   let open Snapp_predicate.Closed_interval in
-  match t.protocol_state.curr_global_slot with
+  match t.protocol_state.global_slot_since_genesis with
   | Ignore ->
       Mina_numbers.Global_slot.{ lower = zero; upper = max_value }
   | Check i ->
@@ -471,3 +471,24 @@ let commitment (t : t) : Transaction_commitment.t =
       (Party_or_stack.With_hashes.other_parties_hash t.other_parties)
     ~protocol_state_predicate_hash:
       (Snapp_predicate.Protocol_state.digest t.protocol_state)
+
+(** This module defines weights for each component of a `Parties.t` element. *)
+module Weight = struct
+  let party : Party.t -> int = fun _ -> 1
+
+  let fee_payer (fp : Party.Signed.t) : int = Party.of_signed fp |> party
+
+  let other_parties : Party.t list -> int = List.sum (module Int) ~f:party
+
+  let protocol_state : Snapp_predicate.Protocol_state.t -> int = fun _ -> 0
+end
+
+let weight (parties : t) : int =
+  let { fee_payer; other_parties; protocol_state } = parties in
+  List.sum
+    (module Int)
+    ~f:Fn.id
+    [ Weight.fee_payer fee_payer
+    ; Weight.other_parties other_parties
+    ; Weight.protocol_state protocol_state
+    ]
