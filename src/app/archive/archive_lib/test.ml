@@ -46,9 +46,24 @@ let%test_module "Archive node unit tests" =
 
     let keys = Array.init 5 ~f:(fun _ -> Keypair.create ())
 
-    let user_command_gen =
+    let user_command_signed_gen =
       User_command.Gen.payment_with_random_participants ~keys ~max_amount:1000
         ~fee_range:10 ()
+
+    let user_command_snapp_gen :
+        ('a, Parties.t) User_command.t_ Base_quickcheck.Generator.t =
+      let open Base_quickcheck.Generator.Let_syntax in
+      let%bind key_index =
+        Base_quickcheck.Generator.int_inclusive 0 @@ (Array.length keys - 1)
+      in
+      let keypair = keys.(key_index) in
+      let ledger = Lazy.force Genesis_ledger.t in
+      let protocol_state = Snapp_predicate.Protocol_state.accept in
+      let%map (parties : Parties.t) =
+        Snapp_generators.gen_parties_from ?succeed:None ~keypair ~ledger
+          ~protocol_state
+      in
+      User_command.Parties parties
 
     let fee_transfer_gen =
       Fee_transfer.Single.Gen.with_random_receivers ~keys ~min_fee:0 ~max_fee:10
@@ -60,12 +75,35 @@ let%test_module "Archive node unit tests" =
           (Coinbase.Fee_transfer.Gen.with_random_receivers ~keys
              ~min_fee:Currency.Fee.zero)
 
-    let%test_unit "User_command: read and write" =
+    let%test_unit "User_command: read and write signed command" =
       let conn = Lazy.force conn_lazy in
       Thread_safe.block_on_async_exn
       @@ fun () ->
       Async.Quickcheck.async_test ~sexp_of:[%sexp_of: User_command.t]
-        user_command_gen ~f:(fun user_command ->
+        user_command_signed_gen ~f:(fun user_command ->
+          let transaction_hash = Transaction_hash.hash_command user_command in
+          match%map
+            let open Deferred.Result.Let_syntax in
+            let%bind user_command_id =
+              Processor.User_command.add_if_doesn't_exist conn user_command
+            in
+            let%map result =
+              Processor.User_command.find conn ~transaction_hash
+            in
+            [%test_result: int] ~expect:user_command_id
+              (Option.value_exn result)
+          with
+          | Ok () ->
+              ()
+          | Error e ->
+              failwith @@ Caqti_error.show e)
+
+    let%test_unit "User_command: read and write snapp command" =
+      let conn = Lazy.force conn_lazy in
+      Thread_safe.block_on_async_exn
+      @@ fun () ->
+      Async.Quickcheck.async_test ~sexp_of:[%sexp_of: User_command.t]
+        user_command_snapp_gen ~f:(fun user_command ->
           let transaction_hash = Transaction_hash.hash_command user_command in
           match%map
             let open Deferred.Result.Let_syntax in

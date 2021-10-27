@@ -126,6 +126,25 @@ and user_commands_insert_input =
   ; public_key : public_keys_obj_rel_insert_input option
   ; typ : user_command_type option >
 
+and snapp_commands_insert_input =
+  < hash : string option
+  ; nonce : bit option
+  ; fee : bit option
+  ; feeToken : bit option
+  ; first_seen : bit option
+  ; feePayer :
+      < publicKey : public_keys_obj_rel_insert_input option
+      ; nonce : bit option
+      ; balance : bit option
+      ; delegate : bit option
+      ; snappUri : bit option
+      ; tokenSymbol : bit option
+      ; timing :
+          < initialMinimumBalance : bit option
+          ; cliffTime : bit option
+          ; vestingPeriod : bit option
+          ; vestingIncrement : bit option > > >
+
 and state_hashes_insert_input =
   < block : blocks_obj_rel_insert_input option
   ; blocks : blocks_arr_rel_insert_input option

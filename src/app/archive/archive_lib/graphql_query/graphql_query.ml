@@ -3,6 +3,7 @@ module Blocks = Blocks
 module Fee_transfers = Fee_transfers
 module Public_keys = Public_keys
 module User_commands = User_commands
+module Snapp_commands = Snapp_commands
 
 module Clear_data =
 [%graphql

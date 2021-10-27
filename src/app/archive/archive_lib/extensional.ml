@@ -48,6 +48,33 @@ module User_command = struct
   [@@deriving yojson, equal, bin_io_unversioned]
 end
 
+module Snapp_command = struct
+  (* for `typ` and `status`, a string is enough
+     in any case, there aren't existing string conversions for the
+     original OCaml types
+
+     The versioned modules in Transaction_hash.Stable don't have yojson functions
+     it would be difficult to add them, so we just use the ones for the
+      top-level Transaction.t
+  *)
+  type t =
+    { sequence_no : int
+    ; fee_payer : Public_key.Compressed.Stable.Latest.t
+    ; fee_token : Token_id.Stable.Latest.t
+    ; nonce : Account.Nonce.Stable.Latest.t
+    ; fee : Currency.Fee.Stable.Latest.t
+    ; hash : Transaction_hash.Stable.Latest.t
+          [@to_yojson Transaction_hash.to_yojson]
+          [@of_yojson Transaction_hash.of_yojson]
+    ; status : string
+    ; failure_reason : Transaction_status.Failure.Stable.Latest.t option
+    ; fee_payer_account_creation_fee_paid :
+        Currency.Amount.Stable.Latest.t option
+    ; fee_payer_balance : Currency.Balance.Stable.Latest.t
+    }
+  [@@deriving yojson, equal, bin_io_unversioned]
+end
+
 module Internal_command = struct
   (* for `typ`, a string is enough
      no existing string conversion for the original OCaml type
